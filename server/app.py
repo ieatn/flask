@@ -1,6 +1,6 @@
 # npx kill-port 5000
 # python -m flask run -p 5000
-from flask import Flask
+from flask import Flask, request
 app = Flask(__name__)
 import mysql.connector
 import os
@@ -19,20 +19,49 @@ if mydb.is_connected():
 
 @app.route('/')
 def hello():
-    return 'flask running on server'
+    return 'server running on port 5000'
 
-@app.route('/greet/<name>')
-def greet(name):
-    return f'Hello, {name}!'
-
-@app.route('/battery')
-def battery():
+@app.route('/battery', methods=['GET'])
+def get_battery():
     cursor = mydb.cursor()
     cursor.execute('SELECT * FROM battery')
     result = cursor.fetchall()
     items = [f"{row[0]} {row[1]} {row[2]}" for row in result]
-    mydb.close()
     return "<br>".join(items)
+
+@app.route('/battery', methods=['POST'])
+def create_battery():
+    print(request.json)
+    name = request.json['name']
+    price = request.json['price']
+    cursor = mydb.cursor()
+    query = ('insert into battery (name, price) values (%s, %s)')
+    cursor.execute(query, (name, price))
+    mydb.commit()
+    cursor.close()
+    return 'battery created', 200
+
+@app.route('/battery/<int:battery_id>', methods=['DELETE'])
+def delete_battery(battery_id):
+    cursor = mydb.cursor()
+    query = ('DELETE FROM battery WHERE id = %s')
+    cursor.execute(query, (battery_id,))
+    mydb.commit()
+    cursor.close()
+    return f'battery with id {battery_id} deleted', 200
+
+@app.route('/battery/<int:battery_id>', methods=['PUT'])
+def update_battery(battery_id):
+    print(request.json)
+    name = request.json['name']
+    price = request.json['price']
+    cursor = mydb.cursor()
+    query = ('UPDATE battery SET name = %s, price = %s WHERE id = %s')
+    cursor.execute(query, (name, price, battery_id))
+    mydb.commit()
+    cursor.close()
+    return f'battery with id {battery_id} updated', 200
+
 
 if __name__ == '__main__':
     app.run(port=5000)
