@@ -1,7 +1,9 @@
 # npx kill-port 5000
 # python -m flask run -p 5000
-from flask import Flask, request
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)
 import mysql.connector
 import os
 # pip install python-dotenv
@@ -19,15 +21,17 @@ if mydb.is_connected():
 
 @app.route('/')
 def hello():
-    return 'server running on port 5000'
+    message = {'message': 'running on server 5000'}
+    return jsonify(message)
 
+# import jsonify to convert to json and return to client fetch
 @app.route('/battery', methods=['GET'])
 def get_battery():
     cursor = mydb.cursor()
     cursor.execute('SELECT * FROM battery')
     result = cursor.fetchall()
-    items = [f"{row[0]} {row[1]} {row[2]}" for row in result]
-    return "<br>".join(items)
+    items = [{'id': row[0], 'name': row[1], 'price': row[2]} for row in result]
+    return jsonify(items)
 
 @app.route('/battery', methods=['POST'])
 def create_battery():
